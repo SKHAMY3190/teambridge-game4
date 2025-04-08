@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -19,7 +19,7 @@
 <body>
   <div id="playerNameInput">
     <input id="playerName" type="text" placeholder="輸入你的名字" />
-    <button onclick="setName()">Join</button>
+    <button onclick="setName()">加入</button>
   </div>
   <div id="welcomeText" style="display: none;">加油！建橋合作中...</div>
   <div id="timer">剩餘時間：2:00</div>
@@ -70,7 +70,8 @@
       playerName = nameInput.value.trim() || "匿名玩家";
       nameBlock.style.display = "none";
       document.getElementById("welcomeText").style.display = "block";
-      document.activeElement.blur(); // 取消鍵盤 focus
+      document.activeElement.blur(); 
+      window.scrollTo(0, 0);
     }
 
     let move = setInterval(moveCar, 50);
