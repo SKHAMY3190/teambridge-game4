@@ -3,30 +3,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>TeamBridge Game</title>
   <style>
     body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 0; text-align: center; }
-    canvas { background: #fff; border: 2px solid #333; display: block; margin: 10px auto; }
-    #chatBox, #inputArea { width: 90%; margin: 10px auto; }
-    #chatBox { height: 80px; overflow-y: scroll; border: 1px solid #aaa; background: #eee; padding: 5px; }
+    canvas { background: #fff; border: 2px solid #333; display: block; margin: 10px auto; width: 90vw; height: auto; }
+    #chatBox, #inputArea, #playerNameInput { width: 90%; margin: 10px auto; }
+    #chatBox { height: 80px; overflow-y: scroll; border: 1px solid #aaa; background: #eee; padding: 5px; font-size: 14px; }
+    #inputArea input, #playerName { width: 70%; padding: 5px; font-size: 16px; }
+    #inputArea button, #playerNameInput button { padding: 6px 12px; font-size: 16px; }
+    #timer { margin: 10px; font-weight: bold; }
+    #welcomeText { font-size: 16px; color: #333; }
   </style>
 </head>
 <body>
-  <input id="playerName" type="text" placeholder="Enter your name" />
-  <button onclick="setName()">Join</button>
-  <div id="timer">Time Left: 2:00</div>
+  <div id="playerNameInput">
+    <input id="playerName" type="text" placeholder="輸入你的名字" />
+    <button onclick="setName()">Join</button>
+  </div>
+  <div id="welcomeText" style="display: none;">加油！建橋合作中...</div>
+  <div id="timer">剩餘時間：2:00</div>
   <canvas id="gameCanvas" width="360" height="180"></canvas>
   <div id="chatBox"></div>
   <div id="inputArea">
-    <input id="chatInput" type="text" placeholder="Say something..." />
-    <button onclick="sendChat()">Send</button>
+    <input id="chatInput" type="text" placeholder="輸入聊天內容..." />
+    <button onclick="sendChat()">送出</button>
   </div>
   <script>
     let canvas = document.getElementById('gameCanvas');
     let ctx = canvas.getContext('2d');
     let carX = 20;
     let timer = 120;
+    let playerName = "";
+
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#cceecc';
@@ -34,26 +43,36 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(carX, canvas.height - 40, 20, 10);
     }
+
     function moveCar() {
       carX += 0.5;
       draw();
       if (carX > canvas.width) clearInterval(move);
     }
+
     function updateTimer() {
       timer--;
-      document.getElementById('timer').textContent = "Time Left: " + Math.floor(timer/60) + ":" + (timer%60).toString().padStart(2, '0');
+      document.getElementById('timer').textContent = "剩餘時間：" + Math.floor(timer/60) + ":" + (timer%60).toString().padStart(2, '0');
       if (timer <= 0) clearInterval(clock);
     }
+
     function sendChat() {
       const input = document.getElementById("chatInput");
       const box = document.getElementById("chatBox");
-      box.innerHTML += "<div>" + input.value + "</div>";
+      box.innerHTML += "<div>" + (playerName ? playerName + "：" : "") + input.value + "</div>";
       box.scrollTop = box.scrollHeight;
       input.value = "";
     }
+
     function setName() {
-      document.getElementById("playerName").style.display = "none";
+      const nameInput = document.getElementById("playerName");
+      const nameBlock = document.getElementById("playerNameInput");
+      playerName = nameInput.value.trim() || "匿名玩家";
+      nameBlock.style.display = "none";
+      document.getElementById("welcomeText").style.display = "block";
+      document.activeElement.blur(); // 取消鍵盤 focus
     }
+
     let move = setInterval(moveCar, 50);
     let clock = setInterval(updateTimer, 1000);
     draw();
