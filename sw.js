@@ -3,8 +3,11 @@ self.addEventListener('install', (e) => {
     caches.open('teambridge-cache').then((cache) => {
       return cache.addAll([
         'index.html',
+        'game.html',
         'manifest.json',
-        'sw.js'
+        'sw.js',
+        'icon-192.png',
+        'icon-512.png'
       ]);
     })
   );

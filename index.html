@@ -1,256 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>TeamBridge Prototype (PWA)</title>
+  <title>TeamBridge</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#88cc88" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
-    }
-  </script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-      background: #f0f0f0;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; font-family: sans-serif; background: #88ccff; }
+    #splash {
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; height: 100vh; animation: fadeOut 2s ease-in-out 2s forwards;
     }
-    #gameArea {
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+    #splash img {
+      width: 160px; height: 160px; margin-bottom: 20px; animation: popIn 1s ease-out;
     }
-    canvas {
-      border: 2px solid #333;
-      background-color: #fff;
+    #splash h1 {
+      font-size: 2rem; color: white; animation: slideIn 1.5s ease-out;
     }
-    #chatBox {
-      width: 90%;
-      height: 80px;
-      overflow-y: scroll;
-      background: #eee;
-      border: 1px solid #aaa;
-      margin-top: 5px;
-      padding: 5px;
-      font-size: 12px;
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; position: absolute; }
     }
-    #inputArea {
-      display: flex;
-      width: 90%;
-      margin-top: 5px;
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
-    #inputArea input {
-      flex: 1;
-      padding: 5px;
-      font-size: 14px;
+    @keyframes slideIn {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
-    #inputArea button {
-      padding: 5px 10px;
-      font-size: 14px;
-    }
-    #timer, #teamDisplay, #scoreBoard {
-      font-size: 16px;
-      margin: 5px;
-    }
-    #playerNameInput {
-      margin-bottom: 10px;
-    }
-    #leaderboard {
-      margin-top: 10px;
-      font-size: 14px;
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 10px;
-    }
-    #endScreen {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      text-align: center;
-      padding: 20px;
-    }
-    #endScreen button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
+    #mainGame { display: none; height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="gameArea">
-    <div id="playerNameInput">
-      <input id="playerName" type="text" placeholder="Enter your name" />
-      <button onclick="setName()">Join</button>
-    </div>
-    <div id="timer">Time Left: 5:00</div>
-    <div id="teamDisplay"></div>
-    <div id="scoreBoard"></div>
-    <canvas id="gameCanvas" width="360" height="180"></canvas>
-    <div id="chatBox"></div>
-    <div id="inputArea">
-      <input id="chatInput" type="text" placeholder="Say something..." />
-      <button onclick="sendChat()">Send</button>
-    </div>
-    <div id="leaderboard"></div>
-    <div id="endScreen">
-      <h2>🎉 Game Over!</h2>
-      <div id="endSummary"></div>
-      <button onclick="restartGame()">Play Again</button>
-    </div>
+  <div id="splash">
+    <img src="icon-192.png" alt="App Icon" />
+    <h1>TeamBridge</h1>
   </div>
+  <iframe id="mainGame" src="game.html" width="100%" height="100%" frameborder="0"></iframe>
+
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const chatBox = document.getElementById("chatBox");
-    const input = document.getElementById("chatInput");
-    const playerNameInput = document.getElementById("playerNameInput");
-    const nameField = document.getElementById("playerName");
-    const teamDisplay = document.getElementById("teamDisplay");
-    const scoreBoard = document.getElementById("scoreBoard");
-    const leaderboard = document.getElementById("leaderboard");
-    const endScreen = document.getElementById("endScreen");
-    const endSummary = document.getElementById("endSummary");
-
-    let bridge = [];
-    let carX = 20;
-    let timer = 120;
-    let playerName = "Anonymous";
-    let team = "";
-    let score = 0;
-    let teamScores = { A: 0, B: 0 };
-    let playerScores = [];
-    let currentLevel = 1;
-
-    function drawBridge() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = currentLevel === 2 ? "#ddeeff" : "#cceecc";
-      ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
-      ctx.fillStyle = currentLevel === 2 ? "#444" : "#a0522d";
-      bridge.forEach((plank) => {
-        ctx.fillRect(plank.x, plank.y, 30, 6);
-      });
-      ctx.fillStyle = "#000";
-      ctx.fillRect(carX, canvas.height - 40, 20, 8);
-      ctx.fillStyle = "#333";
-      ctx.beginPath();
-      ctx.arc(carX + 4, canvas.height - 30, 4, 0, Math.PI * 2);
-      ctx.arc(carX + 16, canvas.height - 30, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    canvas.addEventListener("click", (e) => {
-      if (!playerName || !team) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (y > canvas.height - 50 && y < canvas.height - 20) {
-        const plank = { x: x - 15, y: canvas.height - 36, placedBy: playerName };
-        bridge.push(plank);
-        score++;
-        teamScores[team]++;
-        updateScoreBoard();
-        drawBridge();
-      }
-    });
-
-    function sendChat() {
-      if (input.value.trim()) {
-        const msg = `${playerName} (${team}): ${input.value}`;
-        const message = document.createElement("div");
-        message.textContent = msg;
-        chatBox.appendChild(message);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        input.value = "";
-      }
-    }
-
-    function updateTimer() {
-      const minutes = Math.floor(timer / 60);
-      const seconds = timer % 60;
-      document.getElementById("timer").textContent = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-      if (timer > 0) {
-        timer--;
-      } else {
-        clearInterval(timerInterval);
-        clearInterval(carMoveInterval);
-        endGame();
-      }
-    }
-
-    function endGame() {
-      playerScores.push({ name: playerName, score });
-      playerScores.sort((a, b) => b.score - a.score);
-      let result = `Team A: ${teamScores.A}, Team B: ${teamScores.B}`;
-      leaderboard.innerHTML = `<strong>Leaderboard:</strong><br>` + playerScores.map(p => `${p.name}: ${p.score}`).join("<br>");
-      endSummary.innerHTML = `<p>${result}</p><p>${playerScores.map(p => `${p.name}: ${p.score}`).join("<br>")}</p>`;
-      endScreen.style.display = "flex";
-    }
-
-    function restartGame() {
-      endScreen.style.display = "none";
-      carX = 20;
-      timer = 120;
-      score = 0;
-      teamScores = { A: 0, B: 0 };
-      bridge = [];
-      currentLevel = 1;
-      playerScores = [];
-      drawBridge();
-      startTimers();
-    }
-
-    function setName() {
-      if (nameField.value.trim()) {
-        playerName = nameField.value.trim();
-        playerNameInput.style.display = "none";
-        team = assignTeam(playerName);
-        teamDisplay.textContent = `Your team: ${team}`;
-        updateScoreBoard();
-      }
-    }
-
-    function assignTeam(name) {
-      return name.length % 2 === 0 ? "A" : "B";
-    }
-
-    function updateScoreBoard() {
-      scoreBoard.textContent = `Scores → Team A: ${teamScores.A}, Team B: ${teamScores.B}`;
-    }
-
-    function startTimers() {
-      timerInterval = setInterval(updateTimer, 1000);
-      carMoveInterval = setInterval(moveCar, 100);
-    }
-
-    function moveCar() {
-      carX += currentLevel === 2 ? 0.3 : 0.4;
-      drawBridge();
-      if (carX > canvas.width) {
-        clearInterval(carMoveInterval);
-        clearInterval(timerInterval);
-        endGame();
-      }
-    }
-
-    let carMoveInterval = setInterval(moveCar, 100);
-    let timerInterval = setInterval(updateTimer, 1000);
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('mainGame').style.display = 'block';
+    }, 3000);
   </script>
 </body>
 </html>

@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamBridge Game</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 0; text-align: center; }
+    canvas { background: #fff; border: 2px solid #333; display: block; margin: 10px auto; }
+    #chatBox, #inputArea { width: 90%; margin: 10px auto; }
+    #chatBox { height: 80px; overflow-y: scroll; border: 1px solid #aaa; background: #eee; padding: 5px; }
+  </style>
+</head>
+<body>
+  <input id="playerName" type="text" placeholder="Enter your name" />
+  <button onclick="setName()">Join</button>
+  <div id="timer">Time Left: 2:00</div>
+  <canvas id="gameCanvas" width="360" height="180"></canvas>
+  <div id="chatBox"></div>
+  <div id="inputArea">
+    <input id="chatInput" type="text" placeholder="Say something..." />
+    <button onclick="sendChat()">Send</button>
+  </div>
+  <script>
+    let canvas = document.getElementById('gameCanvas');
+    let ctx = canvas.getContext('2d');
+    let carX = 20;
+    let timer = 120;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#cceecc';
+      ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(carX, canvas.height - 40, 20, 10);
+    }
+    function moveCar() {
+      carX += 0.5;
+      draw();
+      if (carX > canvas.width) clearInterval(move);
+    }
+    function updateTimer() {
+      timer--;
+      document.getElementById('timer').textContent = "Time Left: " + Math.floor(timer/60) + ":" + (timer%60).toString().padStart(2, '0');
+      if (timer <= 0) clearInterval(clock);
+    }
+    function sendChat() {
+      const input = document.getElementById("chatInput");
+      const box = document.getElementById("chatBox");
+      box.innerHTML += "<div>" + input.value + "</div>";
+      box.scrollTop = box.scrollHeight;
+      input.value = "";
+    }
+    function setName() {
+      document.getElementById("playerName").style.display = "none";
+    }
+    let move = setInterval(moveCar, 50);
+    let clock = setInterval(updateTimer, 1000);
+    draw();
+  </script>
+</body>
+</html>
